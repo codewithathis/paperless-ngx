@@ -1,0 +1,54 @@
+{
+    "name": "codewithathis/paperless-ngx",
+    "description": "A Laravel package for managing Paperless-ngx via its API, providing easy integration, document upload, search, tagging, and workflow automation.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "paperless",
+        "paperless-ngx",
+        "document-management",
+        "api",
+        "integration"
+    ],
+    "authors": [
+        {
+            "name": "Athis",
+            "email": "trichyathis@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "laravel/framework": "^9.0|^10.0|^11.0",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0|^10.0",
+        "orchestra/testbench": "^7.0|^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Codewithathis\\PaperlessNgx\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Codewithathis\\PaperlessNgx\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Codewithathis\\PaperlessNgx\\PaperlessServiceProvider"
+            ],
+            "aliases": {
+                "Paperless": "Codewithathis\\PaperlessNgx\\Facades\\Paperless"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
