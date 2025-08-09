@@ -46,7 +46,8 @@ class PaperlessServiceProvider extends ServiceProvider
 
         // Merge configuration
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/paperless.php', 'paperless'
+            __DIR__ . '/../config/paperless.php',
+            'paperless'
         );
 
         // Register commands
@@ -57,6 +58,6 @@ class PaperlessServiceProvider extends ServiceProvider
         }
 
         // Load routes
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        Route::middleware('api')->prefix('api')->name('api.')->group(__DIR__ . '/../routes/api.php');
     }
 }
