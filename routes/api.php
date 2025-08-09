@@ -2,8 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use Codewithathis\PaperlessNgx\Http\Controllers\PaperlessController;
+use Codewithathis\PaperlessNgx\Http\Middleware\PaperlessApiAuth;
 
-Route::prefix('paperless')->group(function () {
+Route::prefix('paperless')->middleware([PaperlessApiAuth::class])->group(function () {
     // Connection test
     Route::get('/test-connection', [PaperlessController::class, 'testConnection']);
 

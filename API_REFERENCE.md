@@ -6,8 +6,28 @@ https://your-domain.com/api/paperless
 ```
 
 ## Authentication
-- **Token Auth**: `PAPERLESS_TOKEN=your-token`
-- **Basic Auth**: `PAPERLESS_USERNAME=user` + `PAPERLESS_PASSWORD=pass`
+
+### Methods
+- **Sanctum**: `Authorization: Bearer YOUR_SANCTUM_TOKEN`
+- **API Token**: `X-Paperless-Token: YOUR_API_TOKEN`
+- **Basic Auth**: `Authorization: Basic base64(username:password)`
+- **None**: Disabled for security
+
+### Configuration
+```env
+PAPERLESS_API_AUTH_ENABLED=true
+PAPERLESS_API_AUTH_METHOD=sanctum|token|basic|none
+```
+
+### Generate API Token
+```bash
+php artisan paperless:generate-token --name="my-client" --show
+```
+
+### Test Authentication
+```bash
+php artisan paperless:test-auth --method=token --token=YOUR_TOKEN
+```
 
 ## Response Format
 ```json

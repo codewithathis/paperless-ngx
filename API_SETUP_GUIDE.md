@@ -18,10 +18,28 @@ PAPERLESS_BASE_URL=https://your-paperless-instance.com
 PAPERLESS_TOKEN=your-api-token
 PAPERLESS_AUTH_METHOD=token
 
-# Optional: Basic Authentication (alternative)
-# PAPERLESS_USERNAME=your-username
-# PAPERLESS_PASSWORD=your-password
-# PAPERLESS_AUTH_METHOD=basic
+# API Authentication (Choose one method)
+PAPERLESS_API_AUTH_ENABLED=true
+PAPERLESS_API_AUTH_METHOD=sanctum
+
+# For Sanctum Authentication (Recommended)
+# Install Sanctum: composer require laravel/sanctum
+# Run: php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+# Run: php artisan migrate
+
+# For API Token Authentication
+# PAPERLESS_API_AUTH_METHOD=token
+# PAPERLESS_API_TOKENS=your-secure-token-1,your-secure-token-2
+
+# For Basic Authentication
+# PAPERLESS_API_AUTH_METHOD=basic
+# PAPERLESS_API_USERNAME=api-user
+# PAPERLESS_API_PASSWORD=secure-password
+
+# Security Settings
+PAPERLESS_RATE_LIMIT_ENABLED=true
+PAPERLESS_RATE_LIMIT_MAX_ATTEMPTS=60
+PAPERLESS_IP_WHITELIST=192.168.1.100,10.0.0.0/8
 ```
 
 ### 3. Publish Configuration (Optional)
@@ -30,15 +48,64 @@ PAPERLESS_AUTH_METHOD=token
 php artisan vendor:publish --provider="Codewithathis\PaperlessNgx\PaperlessServiceProvider"
 ```
 
-### 4. Test Connection
+### 4. Setup Authentication
+
+#### Option A: Sanctum Authentication (Recommended)
+```bash
+# Install Laravel Sanctum
+composer require laravel/sanctum
+
+# Publish configuration
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+
+# Run migrations
+php artisan migrate
+
+# Generate a token for testing
+php artisan tinker
+>>> $user = App\Models\User::first();
+>>> $token = $user->createToken('paperless-api')->plainTextToken;
+>>> echo $token;
+```
+
+#### Option B: API Token Authentication
+```bash
+# Generate a secure API token
+php artisan paperless:generate-token --name="my-api-client" --show
+
+# Add the token to your .env file
+PAPERLESS_API_TOKENS=your-generated-token
+PAPERLESS_API_AUTH_METHOD=token
+```
+
+#### Option C: Basic Authentication
+```env
+PAPERLESS_API_AUTH_METHOD=basic
+PAPERLESS_API_USERNAME=your-username
+PAPERLESS_API_PASSWORD=your-password
+```
+
+### 5. Test Connection
 
 ```bash
+# Test Paperless-ngx connection
 php artisan paperless:test-connection
+
+# Test API authentication
+php artisan paperless:test-auth --method=token --token=YOUR_TOKEN
 ```
 
 Or via API:
 ```bash
-curl -X GET "https://your-domain.com/api/paperless/test-connection"
+# With Sanctum
+curl -H "Authorization: Bearer YOUR_SANCTUM_TOKEN" \
+     -H "Accept: application/json" \
+     https://your-domain.com/api/paperless/test-connection
+
+# With API Token
+curl -H "X-Paperless-Token: YOUR_API_TOKEN" \
+     -H "Accept: application/json" \
+     https://your-domain.com/api/paperless/test-connection
 ```
 
 ## API Endpoints Overview

@@ -14,23 +14,100 @@ https://your-domain.com/api/paperless
 
 ## Authentication
 
-The package supports two authentication methods:
+The Paperless-ngx API is protected by multiple authentication layers. You can configure the authentication method based on your security requirements.
 
-### 1. Token Authentication (Recommended)
+### Authentication Methods
+
+#### 1. Laravel Sanctum (Recommended for Web Applications)
 ```php
 // In your .env file
-PAPERLESS_BASE_URL=https://your-paperless-instance.com
-PAPERLESS_TOKEN=your-api-token
-PAPERLESS_AUTH_METHOD=token
+PAPERLESS_API_AUTH_ENABLED=true
+PAPERLESS_API_AUTH_METHOD=sanctum
 ```
 
-### 2. Basic Authentication
+**Setup:**
+1. Install Laravel Sanctum: `composer require laravel/sanctum`
+2. Publish Sanctum configuration: `php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"`
+3. Run migrations: `php artisan migrate`
+4. Generate a token for your user:
+   ```php
+   $user = User::find(1);
+   $token = $user->createToken('paperless-api')->plainTextToken;
+   ```
+
+**Usage:**
+```bash
+curl -H "Authorization: Bearer YOUR_SANCTUM_TOKEN" \
+     -H "Accept: application/json" \
+     https://your-domain.com/api/paperless/test-connection
+```
+
+#### 2. API Token Authentication (Recommended for API Clients)
 ```php
 // In your .env file
-PAPERLESS_BASE_URL=https://your-paperless-instance.com
-PAPERLESS_USERNAME=your-username
-PAPERLESS_PASSWORD=your-password
-PAPERLESS_AUTH_METHOD=basic
+PAPERLESS_API_AUTH_ENABLED=true
+PAPERLESS_API_AUTH_METHOD=token
+PAPERLESS_API_TOKENS=your-secure-token-1,your-secure-token-2
+```
+
+**Generate a token:**
+```bash
+php artisan paperless:generate-token --name="my-api-client" --show
+```
+
+**Usage:**
+```bash
+curl -H "X-Paperless-Token: YOUR_API_TOKEN" \
+     -H "Accept: application/json" \
+     https://your-domain.com/api/paperless/test-connection
+```
+
+#### 3. Basic Authentication
+```php
+// In your .env file
+PAPERLESS_API_AUTH_ENABLED=true
+PAPERLESS_API_AUTH_METHOD=basic
+PAPERLESS_API_USERNAME=your-username
+PAPERLESS_API_PASSWORD=your-password
+```
+
+**Usage:**
+```bash
+curl -u "username:password" \
+     -H "Accept: application/json" \
+     https://your-domain.com/api/paperless/test-connection
+```
+
+#### 4. No Authentication (Development Only)
+```php
+// In your .env file
+PAPERLESS_API_AUTH_ENABLED=false
+# or
+PAPERLESS_API_AUTH_METHOD=none
+```
+
+⚠️ **Warning:** Only use this in development environments!
+
+### Additional Security Features
+
+#### Rate Limiting
+```php
+// In your .env file
+PAPERLESS_RATE_LIMIT_ENABLED=true
+PAPERLESS_RATE_LIMIT_MAX_ATTEMPTS=60
+PAPERLESS_RATE_LIMIT_DECAY_MINUTES=1
+```
+
+#### IP Whitelisting
+```php
+// In your .env file
+PAPERLESS_IP_WHITELIST=192.168.1.100,10.0.0.0/8,172.16.0.0/12
+```
+
+#### CORS Configuration
+```php
+// In your .env file
+PAPERLESS_ALLOWED_ORIGINS=https://your-frontend.com,https://admin.your-domain.com
 ```
 
 ## Response Format
@@ -660,12 +737,40 @@ Update multiple documents at once.
 PAPERLESS_BASE_URL=https://your-paperless-instance.com
 PAPERLESS_AUTH_METHOD=token
 
-# Token Authentication
+# Token Authentication (for Paperless-ngx)
 PAPERLESS_TOKEN=your-api-token
 
-# Basic Authentication (alternative)
+# Basic Authentication (for Paperless-ngx)
 PAPERLESS_USERNAME=your-username
 PAPERLESS_PASSWORD=your-password
+
+# API Authentication Settings
+PAPERLESS_API_AUTH_ENABLED=true
+PAPERLESS_API_AUTH_METHOD=sanctum
+
+# Sanctum Authentication
+PAPERLESS_SANCTUM_GUARD=web
+PAPERLESS_SANCTUM_STATEFUL=false
+PAPERLESS_SANCTUM_EXPIRATION=null
+
+# API Token Authentication
+PAPERLESS_API_TOKENS=your-secure-token-1,your-secure-token-2
+PAPERLESS_TOKEN_HEADER=X-Paperless-Token
+
+# Basic API Authentication
+PAPERLESS_API_USERNAME=api-user
+PAPERLESS_API_PASSWORD=secure-password
+
+# Rate Limiting
+PAPERLESS_RATE_LIMIT_ENABLED=true
+PAPERLESS_RATE_LIMIT_MAX_ATTEMPTS=60
+PAPERLESS_RATE_LIMIT_DECAY_MINUTES=1
+
+# IP Whitelist (comma-separated)
+PAPERLESS_IP_WHITELIST=192.168.1.100,10.0.0.0/8
+
+# CORS
+PAPERLESS_ALLOWED_ORIGINS=https://your-frontend.com
 
 # Default Settings
 PAPERLESS_PAGE_SIZE=25
@@ -738,17 +843,40 @@ $document = $paperlessService->updateDocument(123, [
 
 ### JavaScript/Fetch Examples
 
-#### Test Connection
+#### Test Connection (with Sanctum)
 ```javascript
-fetch('/api/paperless/test-connection')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('Connected:', data.status);
-        } else {
-            console.error('Connection failed:', data.message);
-        }
-    });
+fetch('/api/paperless/test-connection', {
+    headers: {
+        'Authorization': 'Bearer YOUR_SANCTUM_TOKEN',
+        'Accept': 'application/json'
+    }
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        console.log('Connected:', data.status);
+    } else {
+        console.error('Connection failed:', data.message);
+    }
+});
+```
+
+#### Test Connection (with API Token)
+```javascript
+fetch('/api/paperless/test-connection', {
+    headers: {
+        'X-Paperless-Token': 'YOUR_API_TOKEN',
+        'Accept': 'application/json'
+    }
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        console.log('Connected:', data.status);
+    } else {
+        console.error('Connection failed:', data.message);
+    }
+});
 ```
 
 #### Upload Document
@@ -789,14 +917,32 @@ fetch('/api/paperless/search?query=invoice&db_only=false')
 
 ### cURL Examples
 
-#### Test Connection
+#### Test Connection (with Sanctum)
 ```bash
-curl -X GET "https://your-domain.com/api/paperless/test-connection"
+curl -X GET "https://your-domain.com/api/paperless/test-connection" \
+  -H "Authorization: Bearer YOUR_SANCTUM_TOKEN" \
+  -H "Accept: application/json"
 ```
 
-#### Get Documents
+#### Test Connection (with API Token)
 ```bash
-curl -X GET "https://your-domain.com/api/paperless/documents?page=1&page_size=10&correspondent__id=5"
+curl -X GET "https://your-domain.com/api/paperless/test-connection" \
+  -H "X-Paperless-Token: YOUR_API_TOKEN" \
+  -H "Accept: application/json"
+```
+
+#### Test Connection (with Basic Auth)
+```bash
+curl -X GET "https://your-domain.com/api/paperless/test-connection" \
+  -u "username:password" \
+  -H "Accept: application/json"
+```
+
+#### Get Documents (with API Token)
+```bash
+curl -X GET "https://your-domain.com/api/paperless/documents?page=1&page_size=10&correspondent__id=5" \
+  -H "X-Paperless-Token: YOUR_API_TOKEN" \
+  -H "Accept: application/json"
 ```
 
 #### Upload Document

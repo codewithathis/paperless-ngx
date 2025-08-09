@@ -2,18 +2,75 @@
 	"info": {
 		"_postman_id": "paperless-ngx-api-collection",
 		"name": "Paperless-ngx API",
-		"description": "Complete API collection for Paperless-ngx Laravel package",
+		"description": "Complete API collection for Paperless-ngx Laravel package with authentication",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
-	"item": [
+	"variable": [
 		{
-			"name": "Connection Test",
+			"key": "base_url",
+			"value": "https://your-domain.com",
+			"type": "string"
+		},
+		{
+			"key": "sanctum_token",
+			"value": "YOUR_SANCTUM_TOKEN_HERE",
+			"type": "string"
+		},
+		{
+			"key": "api_token",
+			"value": "YOUR_API_TOKEN_HERE",
+			"type": "string"
+		}
+	],
 			"item": [
-				{
-					"name": "Test Connection",
-					"request": {
-						"method": "GET",
-						"header": [],
+			{
+				"name": "Connection Test",
+				"item": [
+					{
+						"name": "Test Connection (Sanctum)",
+						"request": {
+							"method": "GET",
+							"header": [
+								{
+									"key": "Authorization",
+									"value": "Bearer {{sanctum_token}}",
+									"type": "text"
+								},
+								{
+									"key": "Accept",
+									"value": "application/json",
+									"type": "text"
+								}
+							],
+							"url": {
+								"raw": "{{base_url}}/api/paperless/test-connection",
+								"host": [
+									"{{base_url}}"
+								],
+								"path": [
+									"api",
+									"paperless",
+									"test-connection"
+								]
+							}
+						}
+					},
+					{
+						"name": "Test Connection (API Token)",
+						"request": {
+							"method": "GET",
+							"header": [
+								{
+									"key": "X-Paperless-Token",
+									"value": "{{api_token}}",
+									"type": "text"
+								},
+								{
+									"key": "Accept",
+									"value": "application/json",
+									"type": "text"
+								}
+							],
 						"url": {
 							"raw": "{{base_url}}/api/paperless/test-connection",
 							"host": [
