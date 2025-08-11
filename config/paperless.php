@@ -143,49 +143,4 @@ return [
         'allow_self_signed' => env('PAPERLESS_ALLOW_SELF_SIGNED', false),
         'timeout' => env('PAPERLESS_REQUEST_TIMEOUT', 30),
     ],
-
-    // API Authentication settings
-    'api_auth' => [
-        // Enable/disable API authentication
-        'enabled' => env('PAPERLESS_API_AUTH_ENABLED', true),
-        
-        // Authentication method: 'sanctum', 'basic', 'token', 'none'
-        'method' => env('PAPERLESS_API_AUTH_METHOD', 'sanctum'),
-        
-        // Sanctum settings
-        'sanctum' => [
-            'guard' => env('PAPERLESS_SANCTUM_GUARD', 'web'),
-            'stateful' => env('PAPERLESS_SANCTUM_STATEFUL', false),
-            'expiration' => env('PAPERLESS_SANCTUM_EXPIRATION', null), // null = no expiration
-            'middleware' => [
-                'verify_csrf_token' => env('PAPERLESS_SANCTUM_VERIFY_CSRF', false),
-                'encrypt_cookies' => env('PAPERLESS_SANCTUM_ENCRYPT_COOKIES', false),
-            ],
-        ],
-        
-        // API Token settings (for token-based auth)
-        'token' => [
-            'header_name' => env('PAPERLESS_TOKEN_HEADER', 'X-Paperless-Token'),
-            'tokens' => env('PAPERLESS_API_TOKENS', ''), // comma-separated list
-        ],
-        
-        // Basic Auth settings
-        'basic' => [
-            'username' => env('PAPERLESS_API_USERNAME', null),
-            'password' => env('PAPERLESS_API_PASSWORD', null),
-        ],
-        
-        // Rate limiting
-        'rate_limit' => [
-            'enabled' => env('PAPERLESS_RATE_LIMIT_ENABLED', true),
-            'max_attempts' => env('PAPERLESS_RATE_LIMIT_MAX_ATTEMPTS', 60),
-            'decay_minutes' => env('PAPERLESS_RATE_LIMIT_DECAY_MINUTES', 1),
-        ],
-        
-        // IP whitelist (comma-separated IPs or CIDR ranges)
-        'ip_whitelist' => env('PAPERLESS_IP_WHITELIST', ''),
-        
-        // Allowed origins for CORS
-        'allowed_origins' => env('PAPERLESS_ALLOWED_ORIGINS', '*'),
-    ],
 ];

@@ -2,11 +2,9 @@
 
 namespace Codewithathis\PaperlessNgx;
 
-use Codewithathis\PaperlessNgx\Commands\GenerateApiToken;
-use Codewithathis\PaperlessNgx\Commands\TestApiAuth;
+
 use Codewithathis\PaperlessNgx\PaperlessService;
 use Codewithathis\PaperlessNgx\Commands\TestPaperlessConnection;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class PaperlessServiceProvider extends ServiceProvider
@@ -56,15 +54,7 @@ class PaperlessServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 TestPaperlessConnection::class,
-                GenerateApiToken::class,
-                TestApiAuth::class,
             ]);
         }
-
-        // Register middleware
-        $this->app['router']->aliasMiddleware('paperless.auth', \Codewithathis\PaperlessNgx\Http\Middleware\PaperlessApiAuth::class);
-
-        // Load routes
-        Route::middleware('api')->prefix('api')->name('api.')->group(__DIR__ . '/../routes/api.php');
     }
 }

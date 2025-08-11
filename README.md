@@ -16,7 +16,7 @@ A comprehensive Laravel package for integrating with Paperless-ngx document mana
 - ✅ **Configuration**: Flexible configuration system
 - ✅ **Facade Support**: Easy access via Laravel Facade
 - ✅ **Artisan Commands**: Built-in testing and management commands
-- ✅ **API Routes**: Pre-configured REST API endpoints
+
 
 ## Installation
 
@@ -430,36 +430,7 @@ php artisan paperless:test --upload=/path/to/document.pdf
 php artisan paperless:test --search="invoice"
 ```
 
-## API Routes
 
-The package automatically registers the following API routes:
-
-```php
-// Test connection
-GET /api/paperless/test-connection
-
-// Documents
-GET /api/paperless/documents
-GET /api/paperless/documents/{id}
-POST /api/paperless/documents
-PUT /api/paperless/documents/{id}
-DELETE /api/paperless/documents/{id}
-GET /api/paperless/documents/{id}/download
-
-// Search
-GET /api/paperless/search
-
-// Metadata
-GET /api/paperless/tags
-GET /api/paperless/correspondents
-GET /api/paperless/document-types
-
-// Statistics
-GET /api/paperless/statistics
-
-// Bulk operations
-POST /api/paperless/bulk-edit
-```
 
 ## Error Handling
 
