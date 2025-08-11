@@ -58,7 +58,6 @@ class PaperlessService
         } elseif ($this->token) {
             $client->withHeaders([
                 'Authorization' => "Token {$this->token}",
-                'Content-Type' => 'application/json',
             ]);
         }
 
@@ -71,21 +70,40 @@ class PaperlessService
     private function handleResponse(Response $response): array
     {
         if ($response->successful()) {
-            return $response->json() ?? [];
+            $jsonResponse = $response->json();
+
+            // Ensure we always return an array
+            if (is_array($jsonResponse)) {
+                return $jsonResponse;
+            }
+
+            // Handle case where API returns a string (like document ID)
+            if (is_string($jsonResponse)) {
+                return ['id' => $jsonResponse];
+            }
+
+            // If response is not an array or string, return empty array
+            return [];
         }
 
         $errorMessage = "Paperless API Error: {$response->status()}";
+
         if ($response->body()) {
-            $errorData = $response->json();
-            if (isset($errorData['detail'])) {
-                $errorMessage .= " - {$errorData['detail']}";
+            try {
+                $errorData = $response->json();
+                if (isset($errorData['detail'])) {
+                    $errorMessage .= " - {$errorData['detail']}";
+                }
+                if (isset($errorData['message'])) {
+                    $errorMessage .= " - {$errorData['message']}";
+                }
+                if (isset($errorData['error'])) {
+                    $errorMessage .= " - {$errorData['error']}";
+                }
+            } catch (Exception $e) {
+                // Ignore JSON parsing errors
             }
         }
-
-        Log::error($errorMessage, [
-            'status' => $response->status(),
-            'body' => $response->body(),
-        ]);
 
         throw new Exception($errorMessage, $response->status());
     }
@@ -120,11 +138,11 @@ class PaperlessService
     /**
      * Generate authentication token
      */
-    public function generateAuthToken(): string
+    public function generateAuthToken(): array
     {
         $response = $this->getHttpClient()->post('/api/profile/generate_auth_token/');
-        $data = $this->handleResponse($response);
-        return $data;
+
+        return $this->handleResponse($response);
     }
 
     /**
@@ -151,26 +169,126 @@ class PaperlessService
     }
 
     /**
+     * Validate metadata before processing
+     */
+    private function validateMetadata(array $metadata): void
+    {
+        foreach ($metadata as $key => $value) {
+            if ($value !== null) {
+                if (is_array($value)) {
+                    if (empty($value)) {
+                        throw new Exception("Metadata field '{$key}' cannot be an empty array");
+                    }
+                    foreach ($value as $index => $arrayValue) {
+                        if ($arrayValue === null) {
+                            throw new Exception("Metadata field '{$key}[{$index}]' cannot be null");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Format metadata value for multipart form data
+     */
+    private function formatMetadataValue($value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_numeric($value)) {
+            return (string) $value;
+        }
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_object($value) && method_exists($value, '__toString')) {
+            return (string) $value;
+        }
+
+        // Fallback for any other type
+        return (string) $value;
+    }
+
+    /**
      * Upload a document
      */
-    public function uploadDocument(UploadedFile $file, array $metadata = []): string
+    public function uploadDocument(UploadedFile $file, array $metadata = []): array
     {
-        $data = [
-            'document' => $file,
+        // Validate file
+        if (!$file->isValid()) {
+            throw new Exception('Invalid file upload: ' . $file->getError());
+        }
+
+        // Check if file exists and is readable
+        $realPath = $file->getRealPath();
+        if (!$realPath || !is_readable($realPath)) {
+            throw new Exception('File is not readable or does not exist');
+        }
+
+        // Check file size
+        $maxSize = config('paperless.max_file_size', 52428800); // 50MB default
+        if ($file->getSize() > $maxSize) {
+            throw new Exception('File size exceeds maximum allowed size of ' . ($maxSize / 1024 / 1024) . 'MB');
+        }
+
+        // Validate metadata
+        $this->validateMetadata($metadata);
+
+        // Prepare multipart form data
+        $fileStream = fopen($realPath, 'r');
+        if (!$fileStream) {
+            throw new Exception('Failed to open file for reading');
+        }
+
+        $multipart = [
+            [
+                'name' => 'document',
+                'contents' => $fileStream,
+                'filename' => $file->getClientOriginalName(),
+            ]
         ];
 
         // Add metadata fields
         foreach ($metadata as $key => $value) {
             if ($value !== null) {
-                $data[$key] = $value;
+                if (is_array($value)) {
+                    // Handle array values (like tags, correspondents, etc.)
+                    foreach ($value as $arrayValue) {
+                        if ($arrayValue !== null) {
+                            $multipart[] = [
+                                'name' => $key,
+                                'contents' => $this->formatMetadataValue($arrayValue)
+                            ];
+                        }
+                    }
+                } else {
+                    $multipart[] = [
+                        'name' => $key,
+                        'contents' => $this->formatMetadataValue($value)
+                    ];
+                }
             }
         }
 
-        $response = $this->getHttpClient()
-            ->attach('document', $file->get(), $file->getClientOriginalName())
-            ->post('/api/documents/post_document/', $data);
+        try {
+            $response = $this->getHttpClient()
+                ->asMultipart()
+                ->post('/api/documents/post_document/', $multipart);
 
-        return $this->handleResponse($response);
+            return $this->handleResponse($response);
+        } catch (Exception $e) {
+            throw new Exception('Failed to upload file to Paperless-ngx: ' . $e->getMessage());
+        } finally {
+            // Close the file stream if it was opened
+            if (isset($fileStream) && is_resource($fileStream)) {
+                fclose($fileStream);
+            }
+        }
     }
 
     /**
