@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\UploadedFile;
 use Exception;
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessApiException;
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessConnectionException;
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessValidationException;
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessFileException;
 
 class PaperlessService
 {
@@ -87,25 +91,50 @@ class PaperlessService
         }
 
         $errorMessage = "Paperless API Error: {$response->status()}";
+        $errorData = [];
 
         if ($response->body()) {
             try {
                 $errorData = $response->json();
+                
+                // Build a comprehensive error message from available fields
+                $errorParts = [];
+                
                 if (isset($errorData['detail'])) {
-                    $errorMessage .= " - {$errorData['detail']}";
+                    $errorParts[] = $errorData['detail'];
                 }
                 if (isset($errorData['message'])) {
-                    $errorMessage .= " - {$errorData['message']}";
+                    $errorParts[] = $errorData['message'];
                 }
                 if (isset($errorData['error'])) {
-                    $errorMessage .= " - {$errorData['error']}";
+                    $errorParts[] = $errorData['error'];
                 }
+                if (isset($errorData['non_field_errors'])) {
+                    $errorParts[] = implode(', ', $errorData['non_field_errors']);
+                }
+                
+                // Add field-specific errors
+                foreach ($errorData as $key => $value) {
+                    if (is_array($value) && $key !== 'non_field_errors') {
+                        $errorParts[] = "{$key}: " . implode(', ', $value);
+                    }
+                }
+                
+                if (!empty($errorParts)) {
+                    $errorMessage .= " - " . implode('; ', $errorParts);
+                }
+                
             } catch (Exception $e) {
-                // Ignore JSON parsing errors
+                // If JSON parsing fails, try to extract text from response body
+                $bodyText = $response->body();
+                if (is_string($bodyText) && !empty(trim($bodyText))) {
+                    $errorMessage .= " - " . trim($bodyText);
+                    $errorData = ['raw_response' => $bodyText];
+                }
             }
         }
 
-        throw new Exception($errorMessage, $response->status());
+        throw new PaperlessApiException($errorMessage, $response->status(), $errorData, $response->status());
     }
 
     /**
@@ -176,14 +205,22 @@ class PaperlessService
         foreach ($metadata as $key => $value) {
             if ($value !== null) {
                 if (is_array($value)) {
-                    if (empty($value)) {
-                        throw new Exception("Metadata field '{$key}' cannot be an empty array");
+                                    if (empty($value)) {
+                    throw new PaperlessValidationException(
+                        "Metadata field '{$key}' cannot be an empty array",
+                        $key,
+                        ['empty_array' => "Metadata field '{$key}' cannot be an empty array"]
+                    );
+                }
+                foreach ($value as $index => $arrayValue) {
+                    if ($arrayValue === null) {
+                        throw new PaperlessValidationException(
+                            "Metadata field '{$key}[{$index}]' cannot be null",
+                            $key,
+                            ['null_value' => "Metadata field '{$key}[{$index}]' cannot be null"]
+                        );
                     }
-                    foreach ($value as $index => $arrayValue) {
-                        if ($arrayValue === null) {
-                            throw new Exception("Metadata field '{$key}[{$index}]' cannot be null");
-                        }
-                    }
+                }
                 }
             }
         }
@@ -221,19 +258,37 @@ class PaperlessService
     {
         // Validate file
         if (!$file->isValid()) {
-            throw new Exception('Invalid file upload: ' . $file->getError());
+            throw new PaperlessFileException(
+                'Invalid file upload: ' . $file->getError(),
+                $file->getPathname(),
+                $file->getClientOriginalName(),
+                $file->getSize(),
+                'upload_validation'
+            );
         }
 
         // Check if file exists and is readable
         $realPath = $file->getRealPath();
         if (!$realPath || !is_readable($realPath)) {
-            throw new Exception('File is not readable or does not exist');
+            throw new PaperlessFileException(
+                'File is not readable or does not exist',
+                $file->getPathname(),
+                $file->getClientOriginalName(),
+                $file->getSize(),
+                'file_readability_check'
+            );
         }
 
         // Check file size
         $maxSize = config('paperless.max_file_size', 52428800); // 50MB default
         if ($file->getSize() > $maxSize) {
-            throw new Exception('File size exceeds maximum allowed size of ' . ($maxSize / 1024 / 1024) . 'MB');
+            throw new PaperlessFileException(
+                'File size exceeds maximum allowed size of ' . ($maxSize / 1024 / 1024) . 'MB',
+                $file->getPathname(),
+                $file->getClientOriginalName(),
+                $file->getSize(),
+                'file_size_validation'
+            );
         }
 
         // Validate metadata
@@ -242,7 +297,13 @@ class PaperlessService
         // Prepare multipart form data
         $fileStream = fopen($realPath, 'r');
         if (!$fileStream) {
-            throw new Exception('Failed to open file for reading');
+            throw new PaperlessFileException(
+                'Failed to open file for reading',
+                $realPath,
+                $file->getClientOriginalName(),
+                $file->getSize(),
+                'file_stream_open'
+            );
         }
 
         $multipart = [
@@ -288,8 +349,15 @@ class PaperlessService
             }
 
             return $data;
+        } catch (PaperlessApiException $e) {
+            // Re-throw API exceptions as-is
+            throw $e;
         } catch (Exception $e) {
-            throw new Exception('Failed to upload file to Paperless-ngx: ' . $e->getMessage());
+            throw new PaperlessConnectionException(
+                'Failed to upload file to Paperless-ngx: ' . $e->getMessage(),
+                $this->baseUrl,
+                $e->getMessage()
+            );
         } finally {
             // Close the file stream if it was opened
             if (isset($fileStream) && is_resource($fileStream)) {
@@ -346,7 +414,7 @@ class PaperlessService
             return $response->body();
         }
 
-        throw new Exception("Failed to download document: {$response->status()}");
+        throw new PaperlessApiException("Failed to download document: {$response->status()}", $response->status(), [], $response->status());
     }
 
     /**
@@ -360,7 +428,7 @@ class PaperlessService
             return $response->body();
         }
 
-        throw new Exception("Failed to get document preview: {$response->status()}");
+        throw new PaperlessApiException("Failed to get document preview: {$response->status()}", $response->status(), [], $response->status());
     }
 
     /**
@@ -374,7 +442,7 @@ class PaperlessService
             return $response->body();
         }
 
-        throw new Exception("Failed to get document thumbnail: {$response->status()}");
+        throw new PaperlessApiException("Failed to get document thumbnail: {$response->status()}", $response->status(), [], $response->status());
     }
 
     /**
@@ -831,8 +899,16 @@ class PaperlessService
         try {
             $this->getStatus();
             return true;
+        } catch (PaperlessApiException $e) {
+            Log::error('Paperless connection test failed - API Error', [
+                'error' => $e->getMessage(),
+                'status_code' => $e->getStatusCode(),
+                'base_url' => $this->baseUrl,
+                'response_data' => $e->getResponseData(),
+            ]);
+            return false;
         } catch (Exception $e) {
-            Log::error('Paperless connection test failed', [
+            Log::error('Paperless connection test failed - General Error', [
                 'error' => $e->getMessage(),
                 'base_url' => $this->baseUrl,
             ]);

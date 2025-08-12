@@ -434,23 +434,55 @@ php artisan paperless:test --search="invoice"
 
 ## Error Handling
 
-The service includes comprehensive error handling:
+The service includes comprehensive error handling with custom exception classes:
+
+### Custom Exceptions
+
+- **`PaperlessApiException`** - For API-related errors (HTTP status codes, response data, unique constraint violations)
+- **`PaperlessConnectionException`** - For connection issues (timeout, DNS, SSL, network)
+- **`PaperlessValidationException`** - For validation failures (metadata, field validation)
+- **`PaperlessFileException`** - For file-related errors (size, type, permissions, corruption)
+
+### Basic Error Handling
 
 ```php
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessApiException;
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessConnectionException;
+
 try {
     $documents = $paperlessService->getDocuments();
-} catch (Exception $e) {
-    Log::error('Paperless API Error', [
-        'message' => $e->getMessage(),
-        'code' => $e->getCode(),
-    ]);
+} catch (PaperlessApiException $e) {
+    // Handle API errors (4xx, 5xx status codes)
+    $statusCode = $e->getStatusCode();
+    $responseData = $e->getResponseData();
     
-    return response()->json([
-        'error' => 'Failed to get documents',
-        'message' => $e->getMessage(),
-    ], 500);
+    if ($e->isAuthenticationError()) {
+        return response()->json(['error' => 'Authentication failed'], 401);
+    }
+    
+    return response()->json(['error' => $e->getMessage()], $statusCode);
+} catch (PaperlessConnectionException $e) {
+    // Handle connection issues
+    return response()->json(['error' => 'Service unavailable'], 503);
 }
 ```
+
+### Using the Exception Handler
+
+```php
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessExceptionHandler;
+
+try {
+    $result = $paperlessService->uploadDocument($file, $metadata);
+} catch (PaperlessException $e) {
+    $errorResponse = PaperlessExceptionHandler::handle($e);
+    $httpStatusCode = PaperlessExceptionHandler::getHttpStatusCode($e);
+    
+    return response()->json($errorResponse, $httpStatusCode);
+}
+```
+
+For detailed exception handling examples, see [EXCEPTION_HANDLING_EXAMPLES.md](EXCEPTION_HANDLING_EXAMPLES.md).
 
 ## Logging
 

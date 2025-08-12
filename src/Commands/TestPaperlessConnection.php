@@ -3,6 +3,8 @@
 namespace Codewithathis\PaperlessNgx\Commands;
 
 use Codewithathis\PaperlessNgx\PaperlessService;
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessException;
+use Codewithathis\PaperlessNgx\Exceptions\PaperlessExceptionHandler;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -102,9 +104,28 @@ class TestPaperlessConnection extends Command
 
             return 0;
 
-        } catch (\Exception $e) {
+        } catch (PaperlessException $e) {
             $this->error('❌ Test failed: ' . $e->getMessage());
+            
+            // Use the exception handler to get detailed information
+            $errorDetails = PaperlessExceptionHandler::handle($e);
+            $userMessage = PaperlessExceptionHandler::getUserFriendlyMessage($e);
+            
+            $this->warn('User-friendly message: ' . $userMessage);
+            
+            if ($this->getOutput()->isVerbose()) {
+                $this->line('Error details: ' . json_encode($errorDetails, JSON_PRETTY_PRINT));
+            }
+            
             Log::error('Paperless test command failed', [
+                'error' => $e->getMessage(),
+                'error_details' => $errorDetails,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return 1;
+        } catch (\Exception $e) {
+            $this->error('❌ Test failed with unexpected error: ' . $e->getMessage());
+            Log::error('Paperless test command failed with unexpected error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
