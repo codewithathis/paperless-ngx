@@ -280,7 +280,14 @@ class PaperlessService
                 ->asMultipart()
                 ->post('/api/documents/post_document/', $multipart);
 
-            return $this->handleResponse($response);
+            $data = $this->handleResponse($response);
+
+            // Paperless-ngx returns a task ID string for uploads. Normalize to task_id.
+            if (isset($data['id']) && count($data) === 1) {
+                return ['task_id' => $data['id']];
+            }
+
+            return $data;
         } catch (Exception $e) {
             throw new Exception('Failed to upload file to Paperless-ngx: ' . $e->getMessage());
         } finally {
@@ -289,6 +296,15 @@ class PaperlessService
                 fclose($fileStream);
             }
         }
+    }
+
+    /**
+     * Get task status/details by task ID
+     */
+    public function getTaskByUUID(string $taskId): array
+    {
+        $response = $this->getHttpClient()->get("/api/tasks/?task_id={$taskId}");
+        return $this->handleResponse($response);
     }
 
     /**
