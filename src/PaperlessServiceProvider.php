@@ -2,55 +2,44 @@
 
 namespace Codewithathis\PaperlessNgx;
 
-
-use Codewithathis\PaperlessNgx\PaperlessService;
 use Codewithathis\PaperlessNgx\Commands\TestPaperlessConnection;
 use Illuminate\Support\ServiceProvider;
 
 class PaperlessServiceProvider extends ServiceProvider
 {
-    /**
-     * Register services.
-     */
     public function register(): void
     {
         $this->app->singleton(PaperlessService::class, function ($app) {
             $config = config('paperless');
 
-            $baseUrl = $config['base_url'];
-            $token = $config['auth']['token'];
-            $username = $config['auth']['username'];
-            $password = $config['auth']['password'];
+            $authMethod = $config['auth']['method'] ?? 'auto';
+            if (! in_array($authMethod, ['token', 'basic', 'auto'], true)) {
+                $authMethod = 'auto';
+            }
 
-            return new PaperlessService($baseUrl, $token, $username, $password);
+            return new PaperlessService(
+                $config['base_url'],
+                $config['auth']['token'] ?? null,
+                $config['auth']['username'] ?? null,
+                $config['auth']['password'] ?? null,
+                $authMethod
+            );
         });
 
-        // Register as a facade alias for easier access
         $this->app->alias(PaperlessService::class, 'paperless');
-
-        // Register facade
-        $this->app->singleton('paperless', function ($app) {
-            return $app->make(PaperlessService::class);
-        });
     }
 
-    /**
-     * Bootstrap services.
-     */
     public function boot(): void
     {
-        // Publish configuration file
         $this->publishes([
-            __DIR__ . '/../config/paperless.php' => config_path('paperless.php'),
+            __DIR__.'/../config/paperless.php' => config_path('paperless.php'),
         ], 'paperless-config');
 
-        // Merge configuration
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/paperless.php',
+            __DIR__.'/../config/paperless.php',
             'paperless'
         );
 
-        // Register commands
         if ($this->app->runningInConsole()) {
             $this->commands([
                 TestPaperlessConnection::class,

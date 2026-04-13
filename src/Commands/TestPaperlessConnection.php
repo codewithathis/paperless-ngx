@@ -77,15 +77,18 @@ class TestPaperlessConnection extends Command
                     true
                 );
 
-                $documentId = $paperlessService->uploadDocument($file, [
+                $uploadResult = $paperlessService->uploadDocument($file, [
                     'title' => 'Test Upload - ' . basename($filePath),
                 ]);
 
-                $this->info("✅ File uploaded successfully. Document ID: {$documentId}");
+                $this->info('✅ Upload accepted. Response: '.json_encode($uploadResult, JSON_PRETTY_PRINT));
 
-                // Get the uploaded document
-                $document = $paperlessService->getDocument($documentId);
-                $this->info('Uploaded Document: ' . json_encode($document, JSON_PRETTY_PRINT));
+                if (isset($uploadResult['task_id'])) {
+                    $this->info('Poll the task with getTaskByUUID() until the document is created, then use the new document id with getDocument().');
+                } elseif (isset($uploadResult['id']) && is_numeric($uploadResult['id'])) {
+                    $document = $paperlessService->getDocument((int) $uploadResult['id']);
+                    $this->info('Document: '.json_encode($document, JSON_PRETTY_PRINT));
+                }
             }
 
             // Get tags

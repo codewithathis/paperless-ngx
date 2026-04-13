@@ -17,6 +17,12 @@ A comprehensive Laravel package for integrating with Paperless-ngx document mana
 - ✅ **Facade Support**: Easy access via Laravel Facade
 - ✅ **Artisan Commands**: Built-in testing and management commands
 
+## Requirements
+
+- PHP 8.2 or newer (including PHP 8.4)
+- Laravel 10, 11, or 12
+
+The supported integration surface is `PaperlessService`, the `Paperless` facade, configuration keys, and Artisan commands. Classes under `Codewithathis\PaperlessNgx\Http` and `Codewithathis\PaperlessNgx\Api` are internal implementation details and may change without a major release.
 
 ## Installation
 
@@ -33,7 +39,7 @@ composer require codewithathis/paperless-ngx
 ```json
 {
     "require": {
-        "codewithathis/paperless-ngx": "^1.0"
+        "codewithathis/paperless-ngx": "^2.0"
     }
 }
 ```
@@ -60,7 +66,8 @@ PAPERLESS_BASE_URL=http://your-paperless-instance.com
 PAPERLESS_TOKEN=your_api_token_here
 PAPERLESS_USERNAME=your_username
 PAPERLESS_PASSWORD=your_password
-PAPERLESS_AUTH_METHOD=token
+# token | basic | auto — default auto; see Configuration > Authentication
+PAPERLESS_AUTH_METHOD=auto
 
 # Optional Settings
 PAPERLESS_PAGE_SIZE=25
@@ -76,12 +83,20 @@ The package can be configured through the `config/paperless.php` file. Key confi
 
 ### Authentication
 
+`auth.method` controls how requests are signed when using the service container defaults:
+
+- **`token`** — send the API token only (even if username/password are also set in `.env`).
+- **`basic`** — HTTP Basic auth with username/password only.
+- **`auto`** — legacy behaviour: Basic auth when both username and password are set; otherwise the token.
+
+Runtime `setToken()` / `setBasicAuth()` on `PaperlessService` override the above for that instance.
+
 ```php
 'auth' => [
     'token' => env('PAPERLESS_TOKEN', null),
     'username' => env('PAPERLESS_USERNAME', null),
     'password' => env('PAPERLESS_PASSWORD', null),
-    'method' => env('PAPERLESS_AUTH_METHOD', 'token'),
+    'method' => env('PAPERLESS_AUTH_METHOD', 'auto'),
 ],
 ```
 

@@ -23,10 +23,9 @@ return [
         'username' => env('PAPERLESS_USERNAME', null),
         'password' => env('PAPERLESS_PASSWORD', null),
 
-        // Authentication method priority:
-        // 1. Token authentication (if token is provided)
-        // 2. Basic authentication (if username and password are provided)
-        'method' => env('PAPERLESS_AUTH_METHOD', 'token'), // 'token' or 'basic'
+        // Authentication mode: token (API token only), basic (username/password only),
+        // or auto (default: basic when both username and password are set, otherwise token).
+        'method' => env('PAPERLESS_AUTH_METHOD', 'auto'),
     ],
 
     // Default settings for document operations
