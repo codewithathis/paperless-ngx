@@ -21,9 +21,20 @@ final class PaperlessApiClient
         private ?string $token = null,
         private ?string $username = null,
         private ?string $password = null,
-        private string $authMethod = 'auto'
+        private string $authMethod = 'auto',
+        private ?int $apiVersion = null
     ) {
         $this->baseUrl = rtrim($baseUrl, '/');
+    }
+
+    public function setApiVersion(?int $version): void
+    {
+        $this->apiVersion = $version;
+    }
+
+    public function getApiVersion(): ?int
+    {
+        return $this->apiVersion;
     }
 
     public function getBaseUrl(): string
@@ -121,6 +132,35 @@ final class PaperlessApiClient
         return $this->handleResponse($this->pendingRequest()->get($uri, $query));
     }
 
+    public function jsonGetById(string $uri, int $id): array
+    {
+        return $this->jsonGet(rtrim($uri, '/')."/{$id}/");
+    }
+
+    /**
+     * GET helper for endpoints that may return a bare JSON array (e.g. /api/tasks/).
+     */
+    public function jsonGetList(string $uri, array $query = []): array
+    {
+        $response = $this->pendingRequest()->get($uri, $query);
+
+        if (! $response->successful()) {
+            return $this->handleResponse($response);
+        }
+
+        $jsonResponse = $response->json();
+
+        if (is_array($jsonResponse) && array_is_list($jsonResponse)) {
+            return ['results' => $jsonResponse];
+        }
+
+        if (is_array($jsonResponse)) {
+            return $jsonResponse;
+        }
+
+        return [];
+    }
+
     public function jsonPost(string $uri, array $data = []): array
     {
         return $this->handleResponse($this->pendingRequest()->post($uri, $data));
@@ -204,6 +244,12 @@ final class PaperlessApiClient
         }
 
         $pending = $pending->timeout($timeout)->withOptions(['verify' => $verify]);
+
+        if ($this->apiVersion !== null) {
+            $pending = $pending->withHeaders([
+                'Accept' => "application/json; version={$this->apiVersion}",
+            ]);
+        }
 
         if ($retries > 0) {
             $pending = $pending->retry($retries, 100);

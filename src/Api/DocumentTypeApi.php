@@ -21,6 +21,11 @@ final class DocumentTypeApi
         ]));
     }
 
+    public function getDocumentType(int $id): array
+    {
+        return $this->client->jsonGetById('/api/document_types/', $id);
+    }
+
     public function createDocumentType(array $documentTypeData): array
     {
         return $this->client->jsonPost('/api/document_types/', $documentTypeData);

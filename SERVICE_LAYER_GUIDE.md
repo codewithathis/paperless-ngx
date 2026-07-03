@@ -20,19 +20,51 @@ $paperlessService = app(PaperlessService::class);
 
 #### Available Methods
 
-- `testConnection()` - Test connection to Paperless-ngx
-- `getDocuments($filters = [], $page = 1, $pageSize = 25)` - Get documents
-- `getDocument($id)` - Get single document
-- `uploadDocument($file, $metadata = [])` - Upload document
-- `updateDocument($id, $metadata)` - Update document
-- `deleteDocument($id)` - Delete document
-- `downloadDocument($id, $original = false)` - Download document
-- `searchDocuments($query, $dbOnly = false)` - Search documents
-- `getTags($filters = [], $page = 1, $pageSize = 25)` - Get tags
-- `getCorrespondents($filters = [], $page = 1, $pageSize = 25)` - Get correspondents
-- `getDocumentTypes($filters = [], $page = 1, $pageSize = 25)` - Get document types
-- `getStatistics()` - Get system statistics
-- `bulkEditDocuments($documentIds, $metadata)` - Bulk edit documents
+**Connection & auth**
+
+- `testConnection()`, `setToken()`, `setBasicAuth()`, `setApiVersion()`
+- `getStatus()`, `getRemoteVersion()`, `getProfile()`, `generateAuthToken()`, `obtainToken()`
+- `getStatistics()`, `getUiSettings()`, `updateUiSettings()`
+
+**Documents**
+
+- `getDocuments()`, `getDocument()`, `uploadDocument()`, `updateDocument()`, `patchDocument()`, `deleteDocument()`
+- `downloadDocument()`, `getDocumentPreview()`, `getDocumentThumbnail()`, `getDocumentMetadata()`, `getDocumentSuggestions()`
+- `getDocumentNotes()`, `addDocumentNote()`, `deleteDocumentNote()`, `getDocumentHistory()`, `emailDocument()`
+- `getDocumentShareLinks()`, `bulkDownloadDocuments()`, `bulkEditDocuments()`, `getNextASN()`, `getDocumentSelectionData()`
+- `searchDocuments()`, `searchDocumentsViaDocuments()`, `getSimilarDocuments()`, `getDocumentsByCustomFieldQuery()`, `getSearchAutocomplete()`
+- `getTrash()`, `trashAction()`
+- Bulk helpers: `bulkAddTag()`, `bulkRemoveTag()`, `bulkSetCorrespondent()`, `bulkSetDocumentType()`, `bulkSetStoragePath()`
+
+**Tasks**
+
+- `getTasks()`, `getTaskByUUID()`, `acknowledgeTasks()`
+
+**Metadata (tags, correspondents, types, paths, custom fields, share links)**
+
+- List, get-by-id, create, update, delete for each resource type
+
+**Workflows**
+
+- `getWorkflows()`, `getWorkflow()`, `createWorkflow()`, `updateWorkflow()`, `patchWorkflow()`, `deleteWorkflow()`
+- Same CRUD for `WorkflowTrigger` and `WorkflowAction` resources
+
+**Mail**
+
+- Mail accounts and rules: full CRUD
+- `getProcessedMail()`, `getProcessedMailItem()`
+
+**Admin**
+
+- Users and groups: full CRUD
+- `getLogs()`, `getLog()`
+- `getConfig()`, `getConfigItem()`, `updateConfig()`, `patchConfig()`
+- `bulkEditObjects()`
+
+**Saved views & profile**
+
+- `getSavedViews()`, `createSavedView()`, `updateSavedView()`, `deleteSavedView()`
+- `disconnectSocialAccount()`, `getSocialAccountProviders()`, `getTotpSettings()`, `updateTotpSettings()`
 
 ### Facade Usage
 

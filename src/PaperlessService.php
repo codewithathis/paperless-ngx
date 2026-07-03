@@ -2,14 +2,23 @@
 
 namespace Codewithathis\PaperlessNgx;
 
+use Codewithathis\PaperlessNgx\Api\AuthApi;
+use Codewithathis\PaperlessNgx\Api\BulkApi;
+use Codewithathis\PaperlessNgx\Api\ConfigApi;
 use Codewithathis\PaperlessNgx\Api\CorrespondentApi;
 use Codewithathis\PaperlessNgx\Api\CustomFieldApi;
 use Codewithathis\PaperlessNgx\Api\DocumentApi;
 use Codewithathis\PaperlessNgx\Api\DocumentTypeApi;
+use Codewithathis\PaperlessNgx\Api\GroupApi;
+use Codewithathis\PaperlessNgx\Api\LogApi;
+use Codewithathis\PaperlessNgx\Api\MailApi;
 use Codewithathis\PaperlessNgx\Api\ShareLinkApi;
 use Codewithathis\PaperlessNgx\Api\StoragePathApi;
 use Codewithathis\PaperlessNgx\Api\SystemApi;
 use Codewithathis\PaperlessNgx\Api\TagApi;
+use Codewithathis\PaperlessNgx\Api\TasksApi;
+use Codewithathis\PaperlessNgx\Api\UserApi;
+use Codewithathis\PaperlessNgx\Api\WorkflowApi;
 use Codewithathis\PaperlessNgx\Exceptions\PaperlessApiException;
 use Codewithathis\PaperlessNgx\Http\PaperlessApiClient;
 use Exception;
@@ -40,14 +49,33 @@ class PaperlessService
 
     private ShareLinkApi $shareLinks;
 
+    private TasksApi $tasks;
+
+    private AuthApi $auth;
+
+    private BulkApi $bulk;
+
+    private WorkflowApi $workflows;
+
+    private MailApi $mail;
+
+    private UserApi $users;
+
+    private GroupApi $groups;
+
+    private LogApi $logs;
+
+    private ConfigApi $config;
+
     public function __construct(
         string $baseUrl,
         ?string $token = null,
         ?string $username = null,
         ?string $password = null,
-        string $authMethod = 'auto'
+        string $authMethod = 'auto',
+        ?int $apiVersion = null
     ) {
-        $this->client = new PaperlessApiClient($baseUrl, $token, $username, $password, $authMethod);
+        $this->client = new PaperlessApiClient($baseUrl, $token, $username, $password, $authMethod, $apiVersion);
         $this->documents = new DocumentApi($this->client);
         $this->system = new SystemApi($this->client);
         $this->tags = new TagApi($this->client);
@@ -56,6 +84,15 @@ class PaperlessService
         $this->storagePaths = new StoragePathApi($this->client);
         $this->customFields = new CustomFieldApi($this->client);
         $this->shareLinks = new ShareLinkApi($this->client);
+        $this->tasks = new TasksApi($this->client);
+        $this->auth = new AuthApi($this->client);
+        $this->bulk = new BulkApi($this->client);
+        $this->workflows = new WorkflowApi($this->client);
+        $this->mail = new MailApi($this->client);
+        $this->users = new UserApi($this->client);
+        $this->groups = new GroupApi($this->client);
+        $this->logs = new LogApi($this->client);
+        $this->config = new ConfigApi($this->client);
     }
 
     public function setToken(string $token): self
@@ -68,6 +105,13 @@ class PaperlessService
     public function setBasicAuth(string $username, string $password): self
     {
         $this->client->setBasicAuth($username, $password);
+
+        return $this;
+    }
+
+    public function setApiVersion(?int $version): self
+    {
+        $this->client->setApiVersion($version);
 
         return $this;
     }
@@ -109,7 +153,27 @@ class PaperlessService
 
     public function getTaskByUUID(string $taskId): array
     {
-        return $this->documents->getTaskByUUID($taskId);
+        return $this->tasks->getTaskByUUID($taskId);
+    }
+
+    public function getTasks(array $filters = []): array
+    {
+        return $this->tasks->getTasks($filters);
+    }
+
+    public function acknowledgeTasks(array $taskIds): array
+    {
+        return $this->tasks->acknowledgeTasks($taskIds);
+    }
+
+    public function obtainToken(string $username, string $password): array
+    {
+        return $this->auth->obtainToken($username, $password);
+    }
+
+    public function bulkEditObjects(array $payload): array
+    {
+        return $this->bulk->bulkEditObjects($payload);
     }
 
     public function updateDocument(int $id, array $data): array
@@ -192,6 +256,31 @@ class PaperlessService
         return $this->documents->bulkEditDocuments($documentIds, $editData);
     }
 
+    public function bulkAddTag(array $documentIds, int $tagId): array
+    {
+        return $this->documents->bulkAddTag($documentIds, $tagId);
+    }
+
+    public function bulkRemoveTag(array $documentIds, int $tagId): array
+    {
+        return $this->documents->bulkRemoveTag($documentIds, $tagId);
+    }
+
+    public function bulkSetCorrespondent(array $documentIds, int $correspondentId): array
+    {
+        return $this->documents->bulkSetCorrespondent($documentIds, $correspondentId);
+    }
+
+    public function bulkSetDocumentType(array $documentIds, int $documentTypeId): array
+    {
+        return $this->documents->bulkSetDocumentType($documentIds, $documentTypeId);
+    }
+
+    public function bulkSetStoragePath(array $documentIds, int $storagePathId): array
+    {
+        return $this->documents->bulkSetStoragePath($documentIds, $storagePathId);
+    }
+
     public function getNextASN(): int
     {
         return $this->documents->getNextASN();
@@ -212,9 +301,47 @@ class PaperlessService
         return $this->documents->getSearchAutocomplete($term, $limit);
     }
 
+    public function searchDocumentsViaDocuments(
+        string $query,
+        array $filters = [],
+        int $page = 1,
+        int $pageSize = 25
+    ): array {
+        return $this->documents->searchDocumentsViaDocuments($query, $filters, $page, $pageSize);
+    }
+
+    public function getSimilarDocuments(int $id, array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->documents->getSimilarDocuments($id, $filters, $page, $pageSize);
+    }
+
+    public function getDocumentsByCustomFieldQuery(
+        array $customFieldQuery,
+        array $filters = [],
+        int $page = 1,
+        int $pageSize = 25
+    ): array {
+        return $this->documents->getDocumentsByCustomFieldQuery($customFieldQuery, $filters, $page, $pageSize);
+    }
+
+    public function getTrash(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->documents->getTrash($filters, $page, $pageSize);
+    }
+
+    public function trashAction(?array $documentIds, string $action): array
+    {
+        return $this->documents->trashAction($documentIds, $action);
+    }
+
     public function getTags(array $filters = [], int $page = 1, int $pageSize = 25): array
     {
         return $this->tags->getTags($filters, $page, $pageSize);
+    }
+
+    public function getTag(int $id): array
+    {
+        return $this->tags->getTag($id);
     }
 
     public function createTag(array $tagData): array
@@ -237,6 +364,11 @@ class PaperlessService
         return $this->correspondents->getCorrespondents($filters, $page, $pageSize);
     }
 
+    public function getCorrespondent(int $id): array
+    {
+        return $this->correspondents->getCorrespondent($id);
+    }
+
     public function createCorrespondent(array $correspondentData): array
     {
         return $this->correspondents->createCorrespondent($correspondentData);
@@ -255,6 +387,11 @@ class PaperlessService
     public function getDocumentTypes(array $filters = [], int $page = 1, int $pageSize = 25): array
     {
         return $this->documentTypes->getDocumentTypes($filters, $page, $pageSize);
+    }
+
+    public function getDocumentType(int $id): array
+    {
+        return $this->documentTypes->getDocumentType($id);
     }
 
     public function createDocumentType(array $documentTypeData): array
@@ -277,6 +414,11 @@ class PaperlessService
         return $this->storagePaths->getStoragePaths($filters, $page, $pageSize);
     }
 
+    public function getStoragePath(int $id): array
+    {
+        return $this->storagePaths->getStoragePath($id);
+    }
+
     public function createStoragePath(array $storagePathData): array
     {
         return $this->storagePaths->createStoragePath($storagePathData);
@@ -297,6 +439,11 @@ class PaperlessService
         return $this->customFields->getCustomFields($filters, $page, $pageSize);
     }
 
+    public function getCustomField(int $id): array
+    {
+        return $this->customFields->getCustomField($id);
+    }
+
     public function createCustomField(array $customFieldData): array
     {
         return $this->customFields->createCustomField($customFieldData);
@@ -315,6 +462,11 @@ class PaperlessService
     public function getShareLinks(array $filters = [], int $page = 1, int $pageSize = 25): array
     {
         return $this->shareLinks->getShareLinks($filters, $page, $pageSize);
+    }
+
+    public function getShareLink(int $id): array
+    {
+        return $this->shareLinks->getShareLink($id);
     }
 
     public function createShareLink(array $shareLinkData): array
@@ -355,6 +507,286 @@ class PaperlessService
     public function deleteSavedView(int $id): bool
     {
         return $this->system->deleteSavedView($id);
+    }
+
+    public function getUiSettings(): array
+    {
+        return $this->system->getUiSettings();
+    }
+
+    public function updateUiSettings(array $data): array
+    {
+        return $this->system->updateUiSettings($data);
+    }
+
+    public function disconnectSocialAccount(array $data = []): array
+    {
+        return $this->system->disconnectSocialAccount($data);
+    }
+
+    public function getSocialAccountProviders(): array
+    {
+        return $this->system->getSocialAccountProviders();
+    }
+
+    public function getTotpSettings(): array
+    {
+        return $this->system->getTotpSettings();
+    }
+
+    public function updateTotpSettings(array $data): array
+    {
+        return $this->system->updateTotpSettings($data);
+    }
+
+    public function getWorkflows(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->workflows->getWorkflows($filters, $page, $pageSize);
+    }
+
+    public function getWorkflow(int $id): array
+    {
+        return $this->workflows->getWorkflow($id);
+    }
+
+    public function createWorkflow(array $data): array
+    {
+        return $this->workflows->createWorkflow($data);
+    }
+
+    public function updateWorkflow(int $id, array $data): array
+    {
+        return $this->workflows->updateWorkflow($id, $data);
+    }
+
+    public function patchWorkflow(int $id, array $data): array
+    {
+        return $this->workflows->patchWorkflow($id, $data);
+    }
+
+    public function deleteWorkflow(int $id): bool
+    {
+        return $this->workflows->deleteWorkflow($id);
+    }
+
+    public function getWorkflowTriggers(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->workflows->getWorkflowTriggers($filters, $page, $pageSize);
+    }
+
+    public function getWorkflowTrigger(int $id): array
+    {
+        return $this->workflows->getWorkflowTrigger($id);
+    }
+
+    public function createWorkflowTrigger(array $data): array
+    {
+        return $this->workflows->createWorkflowTrigger($data);
+    }
+
+    public function updateWorkflowTrigger(int $id, array $data): array
+    {
+        return $this->workflows->updateWorkflowTrigger($id, $data);
+    }
+
+    public function patchWorkflowTrigger(int $id, array $data): array
+    {
+        return $this->workflows->patchWorkflowTrigger($id, $data);
+    }
+
+    public function deleteWorkflowTrigger(int $id): bool
+    {
+        return $this->workflows->deleteWorkflowTrigger($id);
+    }
+
+    public function getWorkflowActions(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->workflows->getWorkflowActions($filters, $page, $pageSize);
+    }
+
+    public function getWorkflowAction(int $id): array
+    {
+        return $this->workflows->getWorkflowAction($id);
+    }
+
+    public function createWorkflowAction(array $data): array
+    {
+        return $this->workflows->createWorkflowAction($data);
+    }
+
+    public function updateWorkflowAction(int $id, array $data): array
+    {
+        return $this->workflows->updateWorkflowAction($id, $data);
+    }
+
+    public function patchWorkflowAction(int $id, array $data): array
+    {
+        return $this->workflows->patchWorkflowAction($id, $data);
+    }
+
+    public function deleteWorkflowAction(int $id): bool
+    {
+        return $this->workflows->deleteWorkflowAction($id);
+    }
+
+    public function getMailAccounts(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->mail->getMailAccounts($filters, $page, $pageSize);
+    }
+
+    public function getMailAccount(int $id): array
+    {
+        return $this->mail->getMailAccount($id);
+    }
+
+    public function createMailAccount(array $data): array
+    {
+        return $this->mail->createMailAccount($data);
+    }
+
+    public function updateMailAccount(int $id, array $data): array
+    {
+        return $this->mail->updateMailAccount($id, $data);
+    }
+
+    public function patchMailAccount(int $id, array $data): array
+    {
+        return $this->mail->patchMailAccount($id, $data);
+    }
+
+    public function deleteMailAccount(int $id): bool
+    {
+        return $this->mail->deleteMailAccount($id);
+    }
+
+    public function getMailRules(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->mail->getMailRules($filters, $page, $pageSize);
+    }
+
+    public function getMailRule(int $id): array
+    {
+        return $this->mail->getMailRule($id);
+    }
+
+    public function createMailRule(array $data): array
+    {
+        return $this->mail->createMailRule($data);
+    }
+
+    public function updateMailRule(int $id, array $data): array
+    {
+        return $this->mail->updateMailRule($id, $data);
+    }
+
+    public function patchMailRule(int $id, array $data): array
+    {
+        return $this->mail->patchMailRule($id, $data);
+    }
+
+    public function deleteMailRule(int $id): bool
+    {
+        return $this->mail->deleteMailRule($id);
+    }
+
+    public function getProcessedMail(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->mail->getProcessedMail($filters, $page, $pageSize);
+    }
+
+    public function getProcessedMailItem(int $id): array
+    {
+        return $this->mail->getProcessedMailItem($id);
+    }
+
+    public function getUsers(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->users->getUsers($filters, $page, $pageSize);
+    }
+
+    public function getUser(int $id): array
+    {
+        return $this->users->getUser($id);
+    }
+
+    public function createUser(array $data): array
+    {
+        return $this->users->createUser($data);
+    }
+
+    public function updateUser(int $id, array $data): array
+    {
+        return $this->users->updateUser($id, $data);
+    }
+
+    public function patchUser(int $id, array $data): array
+    {
+        return $this->users->patchUser($id, $data);
+    }
+
+    public function deleteUser(int $id): bool
+    {
+        return $this->users->deleteUser($id);
+    }
+
+    public function getGroups(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->groups->getGroups($filters, $page, $pageSize);
+    }
+
+    public function getGroup(int $id): array
+    {
+        return $this->groups->getGroup($id);
+    }
+
+    public function createGroup(array $data): array
+    {
+        return $this->groups->createGroup($data);
+    }
+
+    public function updateGroup(int $id, array $data): array
+    {
+        return $this->groups->updateGroup($id, $data);
+    }
+
+    public function patchGroup(int $id, array $data): array
+    {
+        return $this->groups->patchGroup($id, $data);
+    }
+
+    public function deleteGroup(int $id): bool
+    {
+        return $this->groups->deleteGroup($id);
+    }
+
+    public function getLogs(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->logs->getLogs($filters, $page, $pageSize);
+    }
+
+    public function getLog(int $id): array
+    {
+        return $this->logs->getLog($id);
+    }
+
+    public function getConfig(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->config->getConfig($filters, $page, $pageSize);
+    }
+
+    public function getConfigItem(int $id): array
+    {
+        return $this->config->getConfigItem($id);
+    }
+
+    public function updateConfig(int $id, array $data): array
+    {
+        return $this->config->updateConfig($id, $data);
+    }
+
+    public function patchConfig(int $id, array $data): array
+    {
+        return $this->config->patchConfig($id, $data);
     }
 
     public function testConnection(): bool

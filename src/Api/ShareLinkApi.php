@@ -21,6 +21,11 @@ final class ShareLinkApi
         ]));
     }
 
+    public function getShareLink(int $id): array
+    {
+        return $this->client->jsonGetById('/api/share_links/', $id);
+    }
+
     public function createShareLink(array $shareLinkData): array
     {
         return $this->client->jsonPost('/api/share_links/', $shareLinkData);

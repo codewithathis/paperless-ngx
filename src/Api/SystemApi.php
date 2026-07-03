@@ -60,4 +60,34 @@ final class SystemApi
     {
         return $this->client->successfulDelete("/api/saved_views/{$id}/");
     }
+
+    public function getUiSettings(): array
+    {
+        return $this->client->jsonGet('/api/ui_settings/');
+    }
+
+    public function updateUiSettings(array $data): array
+    {
+        return $this->client->jsonPatch('/api/ui_settings/', $data);
+    }
+
+    public function disconnectSocialAccount(array $data = []): array
+    {
+        return $this->client->jsonPost('/api/profile/disconnect_social_account/', $data);
+    }
+
+    public function getSocialAccountProviders(): array
+    {
+        return $this->client->jsonGet('/api/profile/social_account_providers/');
+    }
+
+    public function getTotpSettings(): array
+    {
+        return $this->client->jsonGet('/api/profile/totp/');
+    }
+
+    public function updateTotpSettings(array $data): array
+    {
+        return $this->client->jsonPost('/api/profile/totp/', $data);
+    }
 }

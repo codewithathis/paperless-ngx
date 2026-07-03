@@ -21,6 +21,11 @@ final class StoragePathApi
         ]));
     }
 
+    public function getStoragePath(int $id): array
+    {
+        return $this->client->jsonGetById('/api/storage_paths/', $id);
+    }
+
     public function createStoragePath(array $storagePathData): array
     {
         return $this->client->jsonPost('/api/storage_paths/', $storagePathData);

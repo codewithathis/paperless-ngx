@@ -134,11 +134,6 @@ final class DocumentApi
         }
     }
 
-    public function getTaskByUUID(string $taskId): array
-    {
-        return $this->client->jsonGet('/api/tasks/', ['task_id' => $taskId]);
-    }
-
     public function updateDocument(int $id, array $data): array
     {
         return $this->client->jsonPut("/api/documents/{$id}/", $data);
@@ -273,6 +268,90 @@ final class DocumentApi
         return $this->client->jsonGet('/api/search/autocomplete/', [
             'term' => $term,
             'limit' => $limit,
+        ]);
+    }
+
+    public function searchDocumentsViaDocuments(
+        string $query,
+        array $filters = [],
+        int $page = 1,
+        int $pageSize = 25
+    ): array {
+        return $this->getDocuments(array_merge($filters, ['query' => $query]), $page, $pageSize);
+    }
+
+    public function getSimilarDocuments(int $id, array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->getDocuments(array_merge($filters, ['more_like_id' => $id]), $page, $pageSize);
+    }
+
+    public function getDocumentsByCustomFieldQuery(
+        array $customFieldQuery,
+        array $filters = [],
+        int $page = 1,
+        int $pageSize = 25
+    ): array {
+        return $this->getDocuments(array_merge($filters, [
+            'custom_field_query' => json_encode($customFieldQuery),
+        ]), $page, $pageSize);
+    }
+
+    public function getTrash(array $filters = [], int $page = 1, int $pageSize = 25): array
+    {
+        return $this->client->jsonGet('/api/trash/', array_merge($filters, [
+            'page' => $page,
+            'page_size' => $pageSize,
+        ]));
+    }
+
+    public function trashAction(?array $documentIds, string $action): array
+    {
+        $payload = ['action' => $action];
+
+        if ($documentIds !== null) {
+            $payload['documents'] = $documentIds;
+        }
+
+        return $this->client->jsonPost('/api/trash/', $payload);
+    }
+
+    public function bulkAddTag(array $documentIds, int $tagId): array
+    {
+        return $this->bulkEditDocuments($documentIds, [
+            'method' => 'add_tag',
+            'parameters' => ['tag' => $tagId],
+        ]);
+    }
+
+    public function bulkRemoveTag(array $documentIds, int $tagId): array
+    {
+        return $this->bulkEditDocuments($documentIds, [
+            'method' => 'remove_tag',
+            'parameters' => ['tag' => $tagId],
+        ]);
+    }
+
+    public function bulkSetCorrespondent(array $documentIds, int $correspondentId): array
+    {
+        return $this->bulkEditDocuments($documentIds, [
+            'method' => 'set_correspondent',
+            'parameters' => ['correspondent' => $correspondentId],
+        ]);
+    }
+
+    public function bulkSetDocumentType(array $documentIds, int $documentTypeId): array
+    {
+        return $this->bulkEditDocuments($documentIds, [
+            'method' => 'set_document_type',
+            'parameters' => ['document_type' => $documentTypeId],
+        ]);
+    }
+
+    public function bulkSetStoragePath(array $documentIds, int $storagePathId): array
+    {
+        return $this->bulkEditDocuments($documentIds, [
+            'method' => 'set_storage_path',
+            'parameters' => ['storage_path' => $storagePathId],
         ]);
     }
 

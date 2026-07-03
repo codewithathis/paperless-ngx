@@ -7,6 +7,11 @@
 - Internal HTTP layer (`Http\PaperlessApiClient`) and domain API classes under `Api\` (documents, system, tags, correspondents, etc.).
 - PHPUnit suite and GitHub Actions workflow (PHP 8.2–8.4 against Laravel 10–12).
 - Request options wired from config: `defaults.timeout`, `defaults.retry_attempts`, `security.verify_ssl`, `security.allow_self_signed`, `security.timeout`, and optional API error logging via `logging.*`.
+- **Full Paperless-ngx REST API coverage** via new internal API classes: `TasksApi`, `AuthApi`, `BulkApi`, `WorkflowApi`, `MailApi`, `UserApi`, `GroupApi`, `LogApi`, `ConfigApi`.
+- Public `PaperlessService` methods for: tasks (list, acknowledge), token login (`obtainToken`), bulk object edits, workflows/triggers/actions, mail accounts/rules/processed mail, users/groups, logs, application config, UI settings, trash, document search helpers (`searchDocumentsViaDocuments`, `getSimilarDocuments`, `getDocumentsByCustomFieldQuery`), and bulk-edit convenience methods (`bulkAddTag`, `bulkSetCorrespondent`, etc.).
+- `getTag`, `getCorrespondent`, `getDocumentType`, `getStoragePath`, `getCustomField`, `getShareLink` (and equivalents) for single-resource fetches.
+- API versioning via `PAPERLESS_API_VERSION` / `setApiVersion()` (`Accept: application/json; version=N`).
+- Tasks list response normalization for bare JSON array responses from `/api/tasks/`.
 
 ### Changed
 
@@ -23,4 +28,4 @@
 ### Upgrade notes
 
 - If you relied on **both** token and Basic credentials in `.env` and expected **token** auth, set `PAPERLESS_AUTH_METHOD=token` explicitly.
-- Application code should continue to type-hint `PaperlessService` or use the `Paperless` facade only; no changes required for the public method set.
+- `getTaskByUUID()` is now implemented via internal `TasksApi` (public method signature unchanged).

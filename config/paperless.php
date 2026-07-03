@@ -14,6 +14,11 @@ return [
     // Base URL of your Paperless-ngx instance
     'base_url' => env('PAPERLESS_BASE_URL', 'http://localhost:8000'),
 
+    // API version for Accept header (null = omit header for backward compatibility)
+    'api_version' => env('PAPERLESS_API_VERSION') !== null
+        ? (int) env('PAPERLESS_API_VERSION')
+        : null,
+
     // Authentication settings
     'auth' => [
         // Token-based authentication (recommended for API access)

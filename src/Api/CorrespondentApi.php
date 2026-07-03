@@ -21,6 +21,11 @@ final class CorrespondentApi
         ]));
     }
 
+    public function getCorrespondent(int $id): array
+    {
+        return $this->client->jsonGetById('/api/correspondents/', $id);
+    }
+
     public function createCorrespondent(array $correspondentData): array
     {
         return $this->client->jsonPost('/api/correspondents/', $correspondentData);

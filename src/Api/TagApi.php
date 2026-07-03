@@ -21,6 +21,11 @@ final class TagApi
         ]));
     }
 
+    public function getTag(int $id): array
+    {
+        return $this->client->jsonGetById('/api/tags/', $id);
+    }
+
     public function createTag(array $tagData): array
     {
         return $this->client->jsonPost('/api/tags/', $tagData);

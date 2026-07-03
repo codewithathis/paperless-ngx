@@ -22,7 +22,8 @@ class PaperlessServiceProvider extends ServiceProvider
                 $config['auth']['token'] ?? null,
                 $config['auth']['username'] ?? null,
                 $config['auth']['password'] ?? null,
-                $authMethod
+                $authMethod,
+                $config['api_version'] ?? null
             );
         });
 

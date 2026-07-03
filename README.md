@@ -72,6 +72,7 @@ PAPERLESS_AUTH_METHOD=auto
 # Optional Settings
 PAPERLESS_PAGE_SIZE=25
 PAPERLESS_TIMEOUT=30
+PAPERLESS_API_VERSION=9
 PAPERLESS_MAX_FILE_SIZE=52428800
 PAPERLESS_LOGGING_ENABLED=true
 PAPERLESS_LOG_LEVEL=error
@@ -157,6 +158,7 @@ $documentId = Paperless::uploadDocument($file, [
     'correspondent' => 1,
     'tags' => [1, 2, 3],
 ]);
+// Returns ['task_id' => '...'] — poll with getTaskByUUID() until consumption completes
 ```
 
 ### Authentication
@@ -207,6 +209,7 @@ $metadata = [
 ];
 
 $documentId = $paperlessService->uploadDocument($file, $metadata);
+// Returns array with task_id — poll getTaskByUUID($result['task_id']) for the document id
 ```
 
 #### Get Documents with Filters
@@ -273,15 +276,23 @@ $suggestions = $paperlessService->getSearchAutocomplete('inv', 10);
 
 #### Bulk Edit Documents
 
+Paperless expects `method` and `parameters` in the bulk edit payload:
+
 ```php
 $documentIds = [1, 2, 3, 4, 5];
-$editData = [
-    'correspondent' => 1,
-    'tags' => [1, 2],
-    'document_type' => 2,
-];
 
-$result = $paperlessService->bulkEditDocuments($documentIds, $editData);
+// Low-level API (any supported method)
+$result = $paperlessService->bulkEditDocuments($documentIds, [
+    'method' => 'modify_tags',
+    'parameters' => [
+        'add_tags' => [1, 2],
+        'remove_tags' => [3],
+    ],
+]);
+
+// Convenience helpers
+$paperlessService->bulkAddTag($documentIds, 5);
+$paperlessService->bulkSetCorrespondent($documentIds, 1);
 ```
 
 #### Bulk Download Documents
@@ -405,6 +416,40 @@ $deleted = $paperlessService->deleteShareLink(1);
 ```php
 // Get system statistics
 $statistics = $paperlessService->getStatistics();
+```
+
+### Tasks
+
+```php
+$tasks = $paperlessService->getTasks(['acknowledged' => 'false']);
+$task = $paperlessService->getTaskByUUID($taskId);
+$paperlessService->acknowledgeTasks([1, 2]);
+```
+
+### Workflows, Mail, Users & Admin
+
+```php
+$workflows = $paperlessService->getWorkflows();
+$accounts = $paperlessService->getMailAccounts();
+$users = $paperlessService->getUsers();
+$logs = $paperlessService->getLogs();
+$config = $paperlessService->getConfig();
+```
+
+### Trash
+
+```php
+$trashed = $paperlessService->getTrash();
+$paperlessService->trashAction([123], 'restore');
+$paperlessService->trashAction(null, 'empty'); // empty all trashed docs
+```
+
+### API Versioning
+
+```php
+// Via .env: PAPERLESS_API_VERSION=9
+// Or at runtime:
+$paperlessService->setApiVersion(9);
 ```
 
 ### System Information
@@ -612,7 +657,8 @@ class DocumentService
     public function bulkTagDocuments(array $documentIds, array $tagIds)
     {
         return $this->paperlessService->bulkEditDocuments($documentIds, [
-            'tags' => $tagIds,
+            'method' => 'modify_tags',
+            'parameters' => ['add_tags' => $tagIds],
         ]);
     }
 }
@@ -689,26 +735,25 @@ codewithathis/paperless-ngx/
 ├── src/
 │   ├── PaperlessService.php
 │   ├── PaperlessServiceProvider.php
+│   ├── Api/                    # Internal API resource classes
+│   ├── Http/
+│   │   └── PaperlessApiClient.php
 │   ├── Facades/
 │   │   └── Paperless.php
-│   ├── Http/
-│   │   └── Controllers/
-│   │       └── PaperlessController.php
+│   ├── Exceptions/
 │   └── Commands/
 │       └── TestPaperlessConnection.php
 ├── config/
 │   └── paperless.php
-├── routes/
-│   └── api.php
+├── tests/
 ├── composer.json
 └── README.md
 ```
 
 ## Requirements
 
-- PHP >= 8.0
-- Laravel >= 9.0
-- Guzzle HTTP Client (included with Laravel)
+- PHP 8.2 or newer (including PHP 8.4)
+- Laravel 10, 11, or 12
 
 ## Contributing
 

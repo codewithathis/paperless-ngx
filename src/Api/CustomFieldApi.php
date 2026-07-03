@@ -21,6 +21,11 @@ final class CustomFieldApi
         ]));
     }
 
+    public function getCustomField(int $id): array
+    {
+        return $this->client->jsonGetById('/api/custom_fields/', $id);
+    }
+
     public function createCustomField(array $customFieldData): array
     {
         return $this->client->jsonPost('/api/custom_fields/', $customFieldData);
