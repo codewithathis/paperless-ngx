@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 - 2026-07-03
 
 ### Added
 
@@ -24,6 +24,7 @@
 ### Fixed
 
 - `paperless:test` Artisan command no longer treats the upload response as a numeric document id (uploads return a task id or similar payload).
+- CI matrix: use `orchestra/testbench ^8.37` (no stable `^8.40` release), pin Laravel/testbench pairs per version, require `^12.61.1` on Laravel 12 for Composer security policy, and disable advisory blocking for legacy Laravel 10/11 compatibility jobs.
 
 ### Upgrade notes
 

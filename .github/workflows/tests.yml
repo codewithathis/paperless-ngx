@@ -13,14 +13,17 @@ jobs:
       matrix:
         include:
           - php: '8.2'
-            laravel: '^10.0'
-            testbench: '^8.40'
+            laravel: '^10.50.0'
+            testbench: '^8.37'
+            audit_block: false
           - php: '8.3'
-            laravel: '^11.0'
-            testbench: '^9.0'
+            laravel: '^11.54.0'
+            testbench: '^9.17'
+            audit_block: false
           - php: '8.4'
-            laravel: '^12.0'
-            testbench: '^10.0'
+            laravel: '^12.61.1'
+            testbench: '^10.11'
+            audit_block: true
 
     name: PHP ${{ matrix.php }} · Laravel ${{ matrix.laravel }}
 
@@ -34,9 +37,13 @@ jobs:
 
       - name: Install dependencies
         run: |
+          if [ "${{ matrix.audit_block }}" = "false" ]; then
+            composer config audit.block-insecure false || \
+            php -r '$j=json_decode(file_get_contents("composer.json"), true); $j["config"]["audit"]["block-insecure"]=false; file_put_contents("composer.json", json_encode($j, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");'
+          fi
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer require --dev "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --prefer-stable --no-interaction --no-progress
+          composer update --prefer-stable --no-interaction --no-progress -W
 
       - name: Validate composer.json
         run: composer validate --strict
