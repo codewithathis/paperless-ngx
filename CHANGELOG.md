@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1 - 2026-11-10
+
+### Changed
+
+- Declared compatibility with **Laravel 13** (`laravel/framework`: `^10.0|^11.0|^12.0|^13.0`).
+- Extended `orchestra/testbench` allow-list with `^11.0` for Laravel 13 package testing.
+
 ## 2.0.0 - 2026-07-03
 
 ### Added

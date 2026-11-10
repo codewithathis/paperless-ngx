@@ -20,7 +20,7 @@ A comprehensive Laravel package for integrating with Paperless-ngx document mana
 ## Requirements
 
 - PHP 8.2 or newer (including PHP 8.4)
-- Laravel 10, 11, or 12
+- Laravel 10, 11, 12, or 13
 
 The supported integration surface is `PaperlessService`, the `Paperless` facade, configuration keys, and Artisan commands. Classes under `Codewithathis\PaperlessNgx\Http` and `Codewithathis\PaperlessNgx\Api` are internal implementation details and may change without a major release.
 
@@ -753,7 +753,7 @@ codewithathis/paperless-ngx/
 ## Requirements
 
 - PHP 8.2 or newer (including PHP 8.4)
-- Laravel 10, 11, or 12
+- Laravel 10, 11, 12, or 13
 
 ## Contributing
 
