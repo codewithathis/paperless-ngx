@@ -1,7 +1,6 @@
 {
     "name": "codewithathis/paperless-ngx",
     "description": "A Laravel package for managing Paperless-ngx via its API, providing easy integration, document upload, search, tagging, and workflow automation.",
-    "version": "2.0.1",
     "type": "library",
     "license": "MIT",
     "keywords": [
