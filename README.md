@@ -794,7 +794,7 @@ If you encounter any issues or have questions, please:
 
 If this package helped you:
 
-[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/codewithathis)
+<a href="https://buymeacoffee.com/codewithathis"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40" /></a>
 
 ## Credits
 
