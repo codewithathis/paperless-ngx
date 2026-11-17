@@ -792,10 +792,13 @@ If you encounter any issues or have questions, please:
 2. Search existing [issues](https://github.com/codewithathis/paperless-ngx/issues)
 3. Create a new issue with detailed information
 
-If this package helped you, you can [buy me a coffee](https://buymeacoffee.com/codewithathis).
+If this package helped you:
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/codewithathis)
 
 ## Credits
 
-- [Athis J](https://github.com/codewithathis) — package author ([Buy me a coffee](https://buymeacoffee.com/codewithathis))
+- [Athis J](https://github.com/codewithathis) — package author  
+  [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/codewithathis)
 - [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) - The document management system
 - [Laravel](https://laravel.com) - The PHP framework for web artisans
